@@ -169,7 +169,7 @@ final class Promise implements PromiseInterface
         $handlers = $this->handlers;
         $this->handlers = [];
 
-        $loop->defer(function () use ($handlers, $loop): void {
+        $loop->defer(function () use ($handlers): void {
             foreach ($handlers as $handler) {
                 $this->processHandler($handler);
             }
@@ -207,7 +207,9 @@ final class Promise implements PromiseInterface
                 }
             } elseif ($this->state === self::STATE_REJECTED) {
                 if ($handler['onRejected'] === null) {
-                    $promise->rejectInternal($this->reason);
+                    if ($this->reason !== null) {
+                        $promise->rejectInternal($this->reason);
+                    }
                 } else {
                     $result = ($handler['onRejected'])($this->reason);
                     // Handle promise chaining - if result is a promise, wait for it
@@ -242,7 +244,7 @@ final class Promise implements PromiseInterface
             return $value;
         }
 
-        return new self(function ($resolve) use ($value): void {
+        return new self(function (callable $resolve) use ($value): void {
             $resolve($value);
         });
     }
@@ -255,7 +257,7 @@ final class Promise implements PromiseInterface
      */
     public static function reject(Throwable $reason): PromiseInterface
     {
-        return new self(function ($resolve, $reject) use ($reason): void {
+        return new self(function (callable $resolve, callable $reject) use ($reason): void {
             $reject($reason);
         });
     }
