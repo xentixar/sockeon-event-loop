@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Sockeon\EventLoop\LoopInterface;
+use Sockeon\EventLoop\Loop\LoopInterface;
 
 test('LoopInterface exists and has required methods', function () {
     $reflection = new ReflectionClass(LoopInterface::class);
