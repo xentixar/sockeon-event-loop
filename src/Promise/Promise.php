@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sockeon\EventLoop\Promise;
 
+use RuntimeException;
 use Sockeon\EventLoop\Loop\Loop;
 use Throwable;
 
@@ -259,6 +260,151 @@ final class Promise implements PromiseInterface
     {
         return new self(function (callable $resolve, callable $reject) use ($reason): void {
             $reject($reason);
+        });
+    }
+
+    /**
+     * Wait for all promises to resolve.
+     *
+     * Returns a promise that resolves with an array of all resolved values
+     * in the same order as the input promises. If any promise rejects,
+     * the returned promise rejects with the first rejection reason.
+     *
+     * @param array<PromiseInterface|mixed> $promises Array of promises or values
+     * @return PromiseInterface A promise that resolves with an array of values
+     */
+    public static function all(array $promises): PromiseInterface
+    {
+        if (empty($promises)) {
+            return self::resolve([]);
+        }
+
+        return new self(function (callable $resolve, callable $reject) use ($promises): void {
+            $results = [];
+            $remaining = count($promises);
+            $rejected = false;
+
+            foreach ($promises as $index => $promise) {
+                $promise = self::resolve($promise);
+
+                $promise->then(
+                    function ($value) use (&$results, &$remaining, $index, &$rejected, $resolve): void {
+                        if ($rejected) {
+                            return;
+                        }
+
+                        $results[$index] = $value;
+                        $remaining--;
+
+                        if ($remaining === 0) {
+                            // Sort by index to maintain order
+                            ksort($results);
+                            $resolve(array_values($results));
+                        }
+                    },
+                    function (Throwable $reason) use (&$rejected, $reject): void {
+                        if ($rejected) {
+                            return;
+                        }
+
+                        $rejected = true;
+                        $reject($reason);
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Wait for any promise to resolve.
+     *
+     * Returns a promise that resolves with the value of the first promise
+     * that resolves. If all promises reject, the returned promise rejects
+     * with an AggregateException containing all rejection reasons.
+     *
+     * @param array<PromiseInterface|mixed> $promises Array of promises or values
+     * @return PromiseInterface A promise that resolves with the first resolved value
+     */
+    public static function any(array $promises): PromiseInterface
+    {
+        if (empty($promises)) {
+            return self::reject(new RuntimeException('No promises provided'));
+        }
+
+        return new self(function (callable $resolve, callable $reject) use ($promises): void {
+            $reasons = [];
+            $remaining = count($promises);
+            $resolved = false;
+
+            foreach ($promises as $promise) {
+                $promise = self::resolve($promise);
+
+                $promise->then(
+                    function ($value) use (&$resolved, $resolve): void {
+                        if ($resolved) {
+                            return;
+                        }
+
+                        $resolved = true;
+                        $resolve($value);
+                    },
+                    function (Throwable $reason) use (&$reasons, &$remaining, &$resolved, $reject): void {
+                        if ($resolved) {
+                            return;
+                        }
+
+                        $reasons[] = $reason;
+                        $remaining--;
+
+                        if ($remaining === 0) {
+                            $reject(new RuntimeException('All promises rejected', 0, $reasons[0]));
+                        }
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Race promises - return the first promise that settles.
+     *
+     * Returns a promise that resolves or rejects with the value or reason
+     * of the first promise that settles (either resolves or rejects).
+     *
+     * @param array<PromiseInterface|mixed> $promises Array of promises or values
+     * @return PromiseInterface A promise that settles with the first settled promise
+     */
+    public static function race(array $promises): PromiseInterface
+    {
+        if (empty($promises)) {
+            return self::reject(new RuntimeException('No promises provided'));
+        }
+
+        return new self(function (callable $resolve, callable $reject) use ($promises): void {
+            $settled = false;
+
+            foreach ($promises as $promise) {
+                $promise = self::resolve($promise);
+
+                $promise->then(
+                    function ($value) use (&$settled, $resolve): void {
+                        if ($settled) {
+                            return;
+                        }
+
+                        $settled = true;
+                        $resolve($value);
+                    },
+                    function (Throwable $reason) use (&$settled, $reject): void {
+                        if ($settled) {
+                            return;
+                        }
+
+                        $settled = true;
+                        $reject($reason);
+                    }
+                );
+            }
         });
     }
 }
