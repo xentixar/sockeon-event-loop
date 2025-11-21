@@ -27,8 +27,8 @@ A high-performance, extensible event loop implementation for PHP with support fo
 
 ### Phase 1: Core Event Loop ✅
 
-- [ ] `LoopInterface` - Main event loop interface
-- [ ] `Loop` - Singleton event loop instance
+- [x] `LoopInterface` - Main event loop interface
+- [x] `Loop` - Singleton event loop instance
 - [ ] `DriverInterface` - Driver abstraction
 - [ ] `NativeDriver` - Native PHP stream_select driver
 - [ ] Basic event loop operations:

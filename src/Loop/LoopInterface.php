@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Sockeon\EventLoop;
+namespace Sockeon\EventLoop\Loop;
 
 /**
  * Main event loop interface.
