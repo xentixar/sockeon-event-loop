@@ -50,9 +50,9 @@ A high-performance, extensible event loop implementation for PHP with support fo
   - [x] `then()` - Chain promises
   - [x] `catch()` - Handle errors
   - [x] `finally()` - Always execute
-  - [ ] `Promise::all()` - Wait for all promises
-  - [ ] `Promise::any()` - Wait for any promise
-  - [ ] `Promise::race()` - Race promises
+  - [x] `Promise::all()` - Wait for all promises
+  - [x] `Promise::any()` - Wait for any promise
+  - [x] `Promise::race()` - Race promises
   - [x] `Promise::resolve()` - Create resolved promise
   - [x] `Promise::reject()` - Create rejected promise
 
